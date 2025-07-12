@@ -192,33 +192,25 @@
     </div>
 
     <script>
-    // Firebase Storage 참조 (중복 선언 제거)
-    let storage;
-    if (window.firebase) {
-      storage = firebase.storage();
-    }
+    // Firebase Storage 관련 코드 제거, LocalStorage만 사용
     const LS_KEY = 'uploadedAudioFiles';
 
-    // 파일 업로드 처리 (Firebase Storage + LocalStorage)
+    // 파일 업로드 처리 (LocalStorage만 사용, Base64로 저장)
     document.getElementById('audioFile').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (file) {
-            // 파일명에 타임스탬프 추가(중복 방지)
-            const fileName = Date.now() + '_' + file.name;
-            const storageRef = storage.ref(`audio/guest/${fileName}`);
-            storageRef.put(file).then(snapshot => {
-                snapshot.ref.getDownloadURL().then(url => {
-                    // LocalStorage에 파일 정보 저장
-                    const files = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
-                    files.push({ name: file.name, url, storagePath: `audio/guest/${fileName}` });
-                    localStorage.setItem(LS_KEY, JSON.stringify(files));
-                    loadUploadedFileList();
-                });
-            });
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const files = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
+                files.push({ name: file.name, data: evt.target.result });
+                localStorage.setItem(LS_KEY, JSON.stringify(files));
+                loadUploadedFileList();
+            };
+            reader.readAsDataURL(file);
         }
     });
 
-    // 업로드된 파일 목록 불러오기
+    // 업로드된 파일 목록 불러오기 (LocalStorage)
     function loadUploadedFileList() {
         const list = document.getElementById('uploadedFileList');
         const files = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
@@ -228,8 +220,8 @@
             list.innerHTML = files.map((file, idx) => `
                 <div class="flex items-center justify-between bg-blue-50 p-2 rounded mb-2">
                     <span class="font-medium">${file.name}</span>
-                    <audio controls src="${file.url}" class="w-40 mr-2"></audio>
-                    <button class="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition mr-2" onclick="setMainAudio('${file.url.replace(/'/g, '\'')}', '${file.name.replace(/'/g, '\'')}')">
+                    <audio controls src="${file.data}" class="w-40 mr-2"></audio>
+                    <button class="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition mr-2" onclick="setMainAudio('${file.data.replace(/'/g, '\'')}', '${file.name.replace(/'/g, '\'')}')">
                         <i class='fas fa-music mr-1'></i>이 파일로 연습하기
                     </button>
                     <button class="text-red-500 hover:text-red-700 font-bold" onclick="deleteUploadedFile(${idx})">
@@ -253,15 +245,9 @@
     // 파일 삭제 (window에 등록)
     window.deleteUploadedFile = function(idx) {
         const files = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
-        const file = files[idx];
-        if (confirm('정말 삭제하시겠습니까?')) {
-            // Storage에서 삭제
-            storage.ref(file.storagePath).delete().catch(()=>{});
-            // LocalStorage에서 삭제
-            files.splice(idx, 1);
-            localStorage.setItem(LS_KEY, JSON.stringify(files));
-            loadUploadedFileList();
-        }
+        files.splice(idx, 1);
+        localStorage.setItem(LS_KEY, JSON.stringify(files));
+        loadUploadedFileList();
     };
     // 페이지 로드시 업로드된 파일 목록 불러오기
     loadUploadedFileList();
@@ -430,26 +416,7 @@
         document.getElementById('recordingWave').classList.add('hidden');
     });
     </script>
-<!-- Firebase 연동 코드 시작 -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage.js"></script>
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyD7XDyxCH7OjXYfwKapVSd2aVm24hS2TqE",
-    authDomain: "jacekhan-education-app.firebaseapp.com",
-    databaseURL: "https://jacekhan-education-app-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "jacekhan-education-app",
-    storageBucket: "jacekhan-education-app.appspot.com",
-    messagingSenderId: "409545586614",
-    appId: "1:409545586614:web:54eee8b69028e964817317"
-  };
-  firebase.initializeApp(firebaseConfig);
-</script>
-<!-- Firebase 연동 코드 끝 -->
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"rayId":"95e0e3b7fb54721d","serverTiming":{"name":{"cfExtPri":true,"cfEdge":true,"cfOrigin":true,"cfL4":true,"cfSpeedBrain":true,"cfCacheStatus":true}},"version":"2025.6.2","token":"4edd5f8ec12a48cfa682ab8261b80a79"}' crossorigin="anonymous"></script>
-</body>
-</html>
+    
     <script id="html_badge_script1">
         window.__genspark_remove_badge_link = "https://www.genspark.ai/api/html_badge/" +
             "remove_badge?token=To%2FBnjzloZ3UfQdcSaYfDgRn64TbikUl%2BluPICt%2BpRwLOtqsJ%2Bb7oBbCyB1VGYf6pOUVVFVgR597%2B49Okcre%2BEXFSpMQAT07C8fpNlhuoRfmrBowY0zwNRD9a8YnA%2BjI8CeDNIVmlP1VL0EKcNpO51%2FMtEGvSOBr4aFNOzf8sOJ9c2%2BdQT73xk0hQ99Ss4SpJQNXX3bP5P2DKWsPkqp8s301mJYYNSLvgqs28lP6BPAbZO2tGL1qTR5196yxw09glcrGarHVsPUTiq5tmwdSwcqOvobkf9asJYCQ%2B%2BbvrowjRuvqBgX7UeFe%2Fwv7%2FUlNe8OW8t2Zxt6uTBf%2BD9JGd7EMWlmxNcBtfBmDy%2FVZWXQG%2BLDa66F5EnPzOw5WvqKXl7t4j2l8itQn%2B406n%2BgQABPzWSH796Tqphr%2BPdMkmfc9uYjRc9f8CHHIdYlI7QJ9dKUWP7LFUCct7xGTS%2BP5qRfz1dCZUkP0F35tYUAE0QbYnReU4zp81OtUn3EZxPgpje6gm4f67QBr5o4NDqWWQw%3D%3D";
