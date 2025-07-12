@@ -150,10 +150,10 @@
                     <!-- 구간 설정하기 -->
                     <div class="mb-4">
                         <p class="text-white mb-2 font-semibold">구간 설정하기</p>
-                        <div class="flex space-x-2">
-                            <input type="text" id="sectionName" placeholder="메모 (선택사항)" 
-                                   class="flex-1 px-3 py-2 rounded bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70">
-                            <button id="saveSection" class="bg-yellow-400 text-white font-bold text-lg px-6 py-3 rounded-lg shadow-lg ring-2 ring-yellow-300 hover:bg-yellow-500 hover:ring-4 hover:scale-105 transition transform duration-150 flex items-center">
+                        <div class="flex space-x-2 flex-col sm:flex-row space-y-2 sm:space-y-0">
+                            <input type="text" id="sectionName" placeholder="메모 (선택사항)"
+                                   class="flex-1 px-3 py-2 rounded bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 w-full">
+                            <button id="saveSection" class="bg-yellow-400 text-white font-bold text-lg px-6 py-3 rounded-lg shadow-lg ring-2 ring-yellow-300 hover:bg-yellow-500 hover:ring-4 hover:scale-105 transition transform duration-150 flex items-center justify-center w-full sm:w-auto">
                                 <i class="fas fa-save mr-2"></i>저장
                             </button>
                         </div>
@@ -424,6 +424,11 @@
                 recordingWave.classList.add('hidden');
             }
         }
+
+        // 페이지 로드시 녹음 중 파형 숨김
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('recordingWave').classList.add('hidden');
+        });
 
         // 녹음된 오디오 제어
         document.getElementById('playRecorded').addEventListener('click', function() {
