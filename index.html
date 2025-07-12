@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎤 제이스칸 학생전용 연습앱</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+        
+        .gradient-card {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        .audio-controls button {
+            transition: all 0.3s ease;
+        }
+        
+        .audio-controls button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .speed-btn.active {
+            background-color: #4facfe;
+            color: white;
+        }
+        
+        .record-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+        
+        .record-btn.recording {
+            background-color: #ef4444;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .waveform {
+            height: 60px;
+            background: linear-gradient(45deg, #4facfe, #00f2fe);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container mx-auto px-4 py-6 max-w-4xl">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-white mb-2">
+                🎤 제이스칸 학생전용 연습앱
+            </h1>
+            <p class="text-xl text-white opacity-90">학생 전용 연습앱</p>
+        </div>
+
+        <!-- Main Container -->
+        <div class="bg-white rounded-3xl shadow-2xl p-6 mb-6">
+            <!-- 개인 학습 공간 -->
+            <div class="mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                        <i class="fas fa-headphones mr-3 text-purple-600"></i>
+                        개인 학습 공간
+                    </h2>
+                    <button class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition">
+                        <i class="fas fa-tools mr-2"></i>도구
+                    </button>
+                </div>
+
+                <!-- 오디오 편집 섹션 -->
+                <div class="gradient-card rounded-2xl p-6 mb-6">
+                    <div class="flex items-center mb-4">
+                        <i class="fas fa-volume-up text-white text-2xl mr-3"></i>
+                        <h3 class="text-xl font-bold text-white">오디오 편집</h3>
+                    </div>
+
+                    <!-- 파일 업로드 -->
+                    <div class="mb-4">
+                        <input type="file" id="audioFile" accept="audio/*" class="hidden">
+                        <button onclick="document.getElementById('audioFile').click()" 
+                                class="w-full bg-white bg-opacity-20 text-white border-2 border-white border-opacity-30 rounded-lg py-3 px-4 hover:bg-opacity-30 transition">
+                            <i class="fas fa-upload mr-2"></i>음성 파일 선택
+                        </button>
+                    </div>
+                    
+                    <!-- 파일 업로드 상태 표시 -->
+                    <div id="fileInfo" class="mb-4"></div>
+
+                    <!-- 오디오 플레이어 -->
+                    <div class="mb-4">
+                        <audio id="audioPlayer" controls class="w-full bg-white bg-opacity-20 rounded-lg">
+                            <source id="audioSource" type="audio/mpeg">
+                        </audio>
+                    </div>
+
+                    <!-- 재생 속도 -->
+                    <div class="mb-4">
+                        <p class="text-white mb-2 font-semibold">재생 속도:</p>
+                        <div class="flex space-x-2">
+                            <button class="speed-btn bg-white bg-opacity-20 text-white px-3 py-1 rounded" data-speed="0.5">0.5x</button>
+                            <button class="speed-btn bg-white bg-opacity-20 text-white px-3 py-1 rounded" data-speed="0.7">0.7x</button>
+                            <button class="speed-btn bg-white bg-opacity-20 text-white px-3 py-1 rounded active" data-speed="1.0">1.0x</button>
+                            <button class="speed-btn bg-white bg-opacity-20 text-white px-3 py-1 rounded" data-speed="1.2">1.2x</button>
+                        </div>
+                    </div>
+
+                    <!-- 구간 반복 -->
+                    <div class="mb-4">
+                        <p class="text-white mb-2 font-semibold">구간 반복:</p>
+                        <div class="flex space-x-2 flex-wrap">
+                            <button id="setStart" class="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition">
+                                <i class="fas fa-play mr-1"></i>시작 설정
+                            </button>
+                            <button id="setEnd" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition">
+                                <i class="fas fa-stop mr-1"></i>끝 설정
+                            </button>
+                            <button id="repeatSection" class="bg-purple-500 text-white px-3 py-1 rounded hover:bg-purple-600 transition">
+                                <i class="fas fa-redo mr-1"></i>반복 도구
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 구간 설정하기 -->
+                    <div class="mb-4">
+                        <p class="text-white mb-2 font-semibold">구간 설정하기</p>
+                        <div class="flex space-x-2">
+                            <input type="text" id="sectionName" placeholder="메모 (선택사항)" 
+                                   class="flex-1 px-3 py-2 rounded bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70">
+                            <button id="saveSection" class="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 transition">
+                                <i class="fas fa-save mr-1"></i>저장
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 학습 북마크 -->
+                <div class="bg-gray-100 rounded-xl p-4 mb-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-3 flex items-center">
+                        <i class="fas fa-bookmark mr-2 text-yellow-500"></i>
+                        학습 북마크
+                    </h3>
+                    <div id="bookmarkList" class="space-y-2">
+                        <p class="text-gray-500 text-center py-4">저장된 구간이 없습니다</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 내 목소리 녹음하기 -->
+            <div class="bg-gray-50 rounded-2xl p-6">
+                <div class="flex items-center mb-6">
+                    <i class="fas fa-microphone text-red-500 text-2xl mr-3"></i>
+                    <h3 class="text-2xl font-bold text-gray-800">내 목소리 녹음하기</h3>
+                </div>
+
+                <!-- 녹음 버튼 -->
+                <div class="text-center mb-6">
+                    <button id="recordBtn" class="record-btn bg-red-500 text-white flex items-center justify-center mx-auto hover:bg-red-600 transition">
+                        <i id="recordIcon" class="fas fa-microphone text-2xl"></i>
+                    </button>
+                    <p id="recordStatus" class="text-gray-600 mt-2">녹음 시작을 눌러주세요</p>
+                </div>
+
+                <!-- 녹음 파형 표시 -->
+                <div id="recordingWave" class="waveform hidden">
+                    <div class="text-white font-bold">🎤 녹음 중...</div>
+                </div>
+
+                <!-- 녹음된 오디오 재생 -->
+                <div id="recordedAudioContainer" class="hidden">
+                    <h4 class="font-bold text-gray-800 mb-2">녹음된 음성:</h4>
+                    <audio id="recordedAudio" controls class="w-full mb-4">
+                    </audio>
+                    <div class="flex space-x-2">
+                        <button id="playRecorded" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition">
+                            <i class="fas fa-play mr-2"></i>재생
+                        </button>
+                        <button id="deleteRecorded" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition">
+                            <i class="fas fa-trash mr-2"></i>삭제
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center text-white opacity-75">
+            <p>© 2024 제이스칸 학생전용 연습앱 - 언어 학습의 새로운 경험</p>
+        </div>
+    </div>
+
+    <script>
+        // 전역 변수
+        let mediaRecorder;
+        let recordedChunks = [];
+        let isRecording = false;
+        let audioPlayer = document.getElementById('audioPlayer');
+        let startTime = 0;
+        let endTime = 0;
+        let bookmarks = [];
+
+        // 파일 업로드 처리
+        document.getElementById('audioFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                console.log('파일 업로드됨:', file.name, '크기:', file.size, '타입:', file.type);
+                
+                // 파일 정보 표시
+                const fileInfo = document.getElementById('fileInfo');
+                if (fileInfo) {
+                    fileInfo.innerHTML = `
+                        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+                            <strong>✅ 파일 업로드 성공!</strong><br>
+                            파일명: ${file.name}<br>
+                            크기: ${(file.size / 1024 / 1024).toFixed(2)} MB<br>
+                            타입: ${file.type}
+                        </div>
+                    `;
+                }
+                
+                const url = URL.createObjectURL(file);
+                document.getElementById('audioSource').src = url;
+                audioPlayer.load();
+                
+                // 오디오 로드 이벤트 추가
+                audioPlayer.addEventListener('loadeddata', function() {
+                    console.log('오디오 로드 완료');
+                    if (fileInfo) {
+                        fileInfo.innerHTML += `
+                            <div class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded">
+                                <strong>🎵 오디오 재생 준비 완료!</strong><br>
+                                재생 시간: ${formatTime(audioPlayer.duration)}
+                            </div>
+                        `;
+                    }
+                });
+                
+                audioPlayer.addEventListener('error', function(e) {
+                    console.error('오디오 로드 실패:', e);
+                    if (fileInfo) {
+                        fileInfo.innerHTML = `
+                            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                                <strong>❌ 오디오 로드 실패!</strong><br>
+                                지원하지 않는 파일 형식이거나 파일이 손상되었습니다.
+                            </div>
+                        `;
+                    }
+                });
+            } else {
+                console.log('파일이 선택되지 않음');
+            }
+        });
+
+        // 재생 속도 조절
+        document.querySelectorAll('.speed-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                audioPlayer.playbackRate = parseFloat(this.dataset.speed);
+            });
+        });
+
+        // 구간 설정
+        document.getElementById('setStart').addEventListener('click', function() {
+            startTime = audioPlayer.currentTime;
+            this.innerHTML = '<i class="fas fa-play mr-1"></i>시작: ' + formatTime(startTime);
+            this.classList.add('bg-green-600');
+        });
+
+        document.getElementById('setEnd').addEventListener('click', function() {
+            endTime = audioPlayer.currentTime;
+            this.innerHTML = '<i class="fas fa-stop mr-1"></i>끝: ' + formatTime(endTime);
+            this.classList.add('bg-red-600');
+        });
+
+        // 구간 반복
+        document.getElementById('repeatSection').addEventListener('click', function() {
+            if (startTime && endTime && startTime < endTime) {
+                audioPlayer.currentTime = startTime;
+                audioPlayer.play();
+                
+                const repeatInterval = setInterval(() => {
+                    if (audioPlayer.currentTime >= endTime) {
+                        audioPlayer.currentTime = startTime;
+                    }
+                }, 100);
+                
+                setTimeout(() => clearInterval(repeatInterval), 10000); // 10초 후 반복 중지
+            }
+        });
+
+        // 구간 저장
+        document.getElementById('saveSection').addEventListener('click', function() {
+            if (startTime && endTime && startTime < endTime) {
+                const name = document.getElementById('sectionName').value || `구간 ${bookmarks.length + 1}`;
+                bookmarks.push({
+                    name: name,
+                    start: startTime,
+                    end: endTime
+                });
+                updateBookmarkList();
+                document.getElementById('sectionName').value = '';
+            }
+        });
+
+        // 북마크 목록 업데이트
+        function updateBookmarkList() {
+            const list = document.getElementById('bookmarkList');
+            if (bookmarks.length === 0) {
+                list.innerHTML = '<p class="text-gray-500 text-center py-4">저장된 구간이 없습니다</p>';
+            } else {
+                list.innerHTML = bookmarks.map((bookmark, index) => `
+                    <div class="flex items-center justify-between bg-white p-3 rounded border">
+                        <span class="font-medium">${bookmark.name}</span>
+                        <div class="flex space-x-2">
+                            <span class="text-sm text-gray-500">${formatTime(bookmark.start)} - ${formatTime(bookmark.end)}</span>
+                            <button onclick="playBookmark(${index})" class="text-blue-500 hover:text-blue-700">
+                                <i class="fas fa-play"></i>
+                            </button>
+                            <button onclick="deleteBookmark(${index})" class="text-red-500 hover:text-red-700">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // 북마크 재생
+        function playBookmark(index) {
+            const bookmark = bookmarks[index];
+            audioPlayer.currentTime = bookmark.start;
+            audioPlayer.play();
+        }
+
+        // 북마크 삭제
+        function deleteBookmark(index) {
+            bookmarks.splice(index, 1);
+            updateBookmarkList();
+        }
+
+        // 녹음 기능
+        document.getElementById('recordBtn').addEventListener('click', toggleRecording);
+
+        async function toggleRecording() {
+            const recordBtn = document.getElementById('recordBtn');
+            const recordIcon = document.getElementById('recordIcon');
+            const recordStatus = document.getElementById('recordStatus');
+            const recordingWave = document.getElementById('recordingWave');
+
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    recordedChunks = [];
+
+                    mediaRecorder.ondataavailable = function(event) {
+                        if (event.data.size > 0) {
+                            recordedChunks.push(event.data);
+                        }
+                    };
+
+                    mediaRecorder.onstop = function() {
+                        const blob = new Blob(recordedChunks, { type: 'audio/wav' });
+                        const url = URL.createObjectURL(blob);
+                        
+                        document.getElementById('recordedAudio').src = url;
+                        document.getElementById('recordedAudioContainer').classList.remove('hidden');
+                    };
+
+                    mediaRecorder.start();
+                    isRecording = true;
+                    
+                    recordBtn.classList.add('recording');
+                    recordIcon.className = 'fas fa-stop text-2xl';
+                    recordStatus.textContent = '녹음 중... (클릭하면 중지)';
+                    recordingWave.classList.remove('hidden');
+                    
+                } catch (error) {
+                    alert('마이크 접근 권한이 필요합니다.');
+                }
+            } else {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                isRecording = false;
+                
+                recordBtn.classList.remove('recording');
+                recordIcon.className = 'fas fa-microphone text-2xl';
+                recordStatus.textContent = '녹음 완료! 아래에서 재생하세요';
+                recordingWave.classList.add('hidden');
+            }
+        }
+
+        // 녹음된 오디오 제어
+        document.getElementById('playRecorded').addEventListener('click', function() {
+            document.getElementById('recordedAudio').play();
+        });
+
+        document.getElementById('deleteRecorded').addEventListener('click', function() {
+            document.getElementById('recordedAudioContainer').classList.add('hidden');
+            document.getElementById('recordedAudio').src = '';
+            document.getElementById('recordStatus').textContent = '녹음 시작을 눌러주세요';
+        });
+
+        // 시간 포맷 함수
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${minutes}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // 초기화
+        updateBookmarkList();
+    </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"rayId":"95e0e3b7fb54721d","serverTiming":{"name":{"cfExtPri":true,"cfEdge":true,"cfOrigin":true,"cfL4":true,"cfSpeedBrain":true,"cfCacheStatus":true}},"version":"2025.6.2","token":"4edd5f8ec12a48cfa682ab8261b80a79"}' crossorigin="anonymous"></script>
+</body>
+</html>
+    <script id="html_badge_script1">
+        window.__genspark_remove_badge_link = "https://www.genspark.ai/api/html_badge/" +
+            "remove_badge?token=To%2FBnjzloZ3UfQdcSaYfDgRn64TbikUl%2BluPICt%2BpRwLOtqsJ%2Bb7oBbCyB1VGYf6pOUVVFVgR597%2B49Okcre%2BEXFSpMQAT07C8fpNlhuoRfmrBowY0zwNRD9a8YnA%2BjI8CeDNIVmlP1VL0EKcNpO51%2FMtEGvSOBr4aFNOzf8sOJ9c2%2BdQT73xk0hQ99Ss4SpJQNXX3bP5P2DKWsPkqp8s301mJYYNSLvgqs28lP6BPAbZO2tGL1qTR5196yxw09glcrGarHVsPUTiq5tmwdSwcqOvobkf9asJYCQ%2B%2BbvrowjRuvqBgX7UeFe%2Fwv7%2FUlNe8OW8t2Zxt6uTBf%2BD9JGd7EMWlmxNcBtfBmDy%2FVZWXQG%2BLDa66F5EnPzOw5WvqKXl7t4j2l8itQn%2B406n%2BgQABPzWSH796Tqphr%2BPdMkmfc9uYjRc9f8CHHIdYlI7QJ9dKUWP7LFUCct7xGTS%2BP5qRfz1dCZUkP0F35tYUAE0QbYnReU4zp81OtUn3EZxPgpje6gm4f67QBr5o4NDqWWQw%3D%3D";
+        window.__genspark_locale = "ko-KR";
+        window.__genspark_token = "To/BnjzloZ3UfQdcSaYfDgRn64TbikUl+luPICt+pRwLOtqsJ+b7oBbCyB1VGYf6pOUVVFVgR597+49Okcre+EXFSpMQAT07C8fpNlhuoRfmrBowY0zwNRD9a8YnA+jI8CeDNIVmlP1VL0EKcNpO51/MtEGvSOBr4aFNOzf8sOJ9c2+dQT73xk0hQ99Ss4SpJQNXX3bP5P2DKWsPkqp8s301mJYYNSLvgqs28lP6BPAbZO2tGL1qTR5196yxw09glcrGarHVsPUTiq5tmwdSwcqOvobkf9asJYCQ++bvrowjRuvqBgX7UeFe/wv7/UlNe8OW8t2Zxt6uTBf+D9JGd7EMWlmxNcBtfBmDy/VZWXQG+LDa66F5EnPzOw5WvqKXl7t4j2l8itQn+406n+gQABPzWSH796Tqphr+PdMkmfc9uYjRc9f8CHHIdYlI7QJ9dKUWP7LFUCct7xGTS+P5qRfz1dCZUkP0F35tYUAE0QbYnReU4zp81OtUn3EZxPgpje6gm4f67QBr5o4NDqWWQw==";
+    </script>
+    
+    <script id="html_notice_dialog_script" src="https://www.genspark.ai/notice_dialog.js"></script>
+    
